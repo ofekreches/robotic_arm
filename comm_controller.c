@@ -39,9 +39,13 @@ void processDataToSend(CommController *comm, const Arm_t *arm) {
     comm->TxData[1] = HEADER;
 
     memcpy(&comm->TxData[2], &arm->base_joint.current_position, 4);
-    memcpy(&comm->TxData[6], &arm->second_joint.current_position, 4);
-    memcpy(&comm->TxData[10], &arm->third_joint.current_position, 4);
-    memcpy(&comm->TxData[14], &arm->fourth_joint.current_position, 4);
+    memcpy(&comm->TxData[6], &arm->base_joint.current_velocity, 4);
+    memcpy(&comm->TxData[10], &arm->base_joint.s_velocity, 4);
+    memcpy(&comm->TxData[14], &arm->base_joint.motor.step_function_frequency, 4);
+    // memcpy(&comm->TxData[6], &arm->second_joint.current_position, 4);
+    
+    // memcpy(&comm->TxData[10], &arm->third_joint.current_position, 4);
+    // memcpy(&comm->TxData[14], &arm->fourth_joint.current_position, 4);
     memcpy(&comm->TxData[18], &arm->fifth_joint.current_position, 4);
 
     // Compute checksum

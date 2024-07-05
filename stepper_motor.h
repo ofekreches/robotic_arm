@@ -21,6 +21,9 @@ typedef struct {
     unsigned long last_step_time;
     bool step_state;
     long step_count;
+    int step_function_counter;
+    int step_function_frequency;
+    unsigned long last_call_time; // Add last call time
 } StepperMotor_t;
 
 #ifdef __cplusplus

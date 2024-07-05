@@ -12,6 +12,8 @@ void init_stepper_motor(StepperMotor_t* motor, int ena_pin, int dir_pin, int pul
     motor->step_state = false;
     motor->step_count = 0;
     motor->perform_step_flag = false;
+    motor->step_function_frequency = 0;
+    motor->last_call_time = micros(); // Initialize last call time
 
     // Set pin modes
     pinMode(motor->ena_pin, OUTPUT);
@@ -34,9 +36,21 @@ void disable_motor(StepperMotor_t* motor) {
 
 // Non-blocking function to step the stepper motor
 void step_motor(StepperMotor_t* motor) {
-    if (motor->perform_step_flag) {
-        unsigned long current_time = micros();
+    motor->step_function_counter++;
+    unsigned long current_time = micros();
 
+    // Calculate the elapsed time
+    unsigned long elapsed_time = current_time - motor->last_call_time;
+    
+    // Check if elapsed time is greater than or equal to one second (1,000,000 microseconds)
+    if (elapsed_time >= 1000000) {
+        // Calculate the frequency of the step function being called
+        motor->step_function_frequency = motor->step_function_counter; // Frequency in Hz
+        motor->step_function_counter = 0; // Reset counter
+        motor->last_call_time = current_time; // Reset the timer
+    }
+
+    if (motor->perform_step_flag) {
         // Check if it's time to toggle the step pin state
         if (current_time - motor->last_step_time >= MIN_STEP_TIME) {
             if (motor->step_state) {

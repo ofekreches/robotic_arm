@@ -26,6 +26,13 @@ Joint_t third_joint;
 Joint_t fourth_joint;
 Joint_t fifth_joint;
 
+// Profile objects
+Profile_t base_profile;
+Profile_t shoulder_profile;
+Profile_t elbow_profile;
+Profile_t wrist_pitch_profile;
+Profile_t wrist_roll_profile;
+
 // Arm object
 Arm_t arm;
 
@@ -34,7 +41,6 @@ CommController comm;
 
 // FreeRTOS objects
 TaskHandle_t StepMotorTaskHandle;
-TaskHandle_t UpdateJointTaskHandle;
 TaskHandle_t CommunicationTaskHandle;
 SemaphoreHandle_t StepMotorSemaphore;
 
@@ -47,32 +53,24 @@ void IRAM_ATTR onMotorTimer(void* arg) {
 
 void stepMotorTask(void * parameter) {
     Arm_t *arm = (Arm_t *)parameter;
+    int counter = 0;
 
     for(;;) {
         if(xSemaphoreTake(StepMotorSemaphore, portMAX_DELAY)) {
+            // Step motors
             step_motor(&arm->base_joint.motor);
             step_motor(&arm->second_joint.motor);
             step_motor(&arm->third_joint.motor);
             step_motor(&arm->fourth_joint.motor);
             step_motor(&arm->fifth_joint.motor);
+
+            move_joint_to_position(&arm->base_joint);
+            move_joint_to_position(&arm->second_joint);
+            move_joint_to_position(&arm->third_joint);
+            move_joint_to_position(&arm->fourth_joint);
+            move_joint_to_position(&arm->fifth_joint);
+            counter++;
         }
-    }
-}
-
-void updateJointTask(void * parameter) {
-    Arm_t *arm = (Arm_t *)parameter;
-    TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pdMS_TO_TICKS(MOTOR_CONTROL_DT * 1000);
-    xLastWakeTime = xTaskGetTickCount();
-
-    for(;;) {
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
-        move_joint_to_position(&arm->base_joint);
-        move_joint_to_position(&arm->second_joint);
-        move_joint_to_position(&arm->third_joint);
-        move_joint_to_position(&arm->fourth_joint);
-        move_joint_to_position(&arm->fifth_joint);
     }
 }
 
@@ -109,12 +107,19 @@ void setup() {
     init_stepper_motor(&wrist_pitch_motor, WRIST_PITCH_ENA_PIN, WRIST_PITCH_DIR_PIN, WRIST_PUL_PIN, WRIST_PITCH_MOTOR_STEPS_PER_REV);
     init_stepper_motor(&wrist_roll_motor, WRIST_ROLL_ENA_PIN, WRIST_ROLL_DIR_PIN, WRIST_PUL_PIN, WRIST_ROLL_MOTOR_STEPS_PER_REV);
 
+    // Initialize profiles
+    init_profile(&base_profile, 1.4 , 0.3 , 0.1);
+    init_profile(&shoulder_profile, 1.4,0.3 , 0.1);
+    init_profile(&elbow_profile, 1.4,0.3 , 0.1);
+    init_profile(&wrist_pitch_profile, 1.4, 0.3 , 0.1);
+    init_profile(&wrist_roll_profile, 1.4, 0.3 , 0.1);
+
     // Initialize joints
-    init_joint(&base_joint, &base_motor, BASE_GEAR_RATIO);
-    init_joint(&second_joint, &shoulder_motor_1, SHOULDER_GEAR_RATIO);
-    init_joint(&third_joint, &elbow_motor, ELBOW_GEAR_RATIO);
-    init_joint(&fourth_joint, &wrist_pitch_motor, WRIST_PITCH_GEAR_RATIO);
-    init_joint(&fifth_joint, &wrist_roll_motor, WRIST_ROLL_GEAR_RATIO);
+    init_joint(&base_joint, &base_motor, &base_profile, BASE_GEAR_RATIO);
+    init_joint(&second_joint, &shoulder_motor_1, &shoulder_profile, SHOULDER_GEAR_RATIO);
+    init_joint(&third_joint, &elbow_motor, &elbow_profile, ELBOW_GEAR_RATIO);
+    init_joint(&fourth_joint, &wrist_pitch_motor, &wrist_pitch_profile, WRIST_PITCH_GEAR_RATIO);
+    init_joint(&fifth_joint, &wrist_roll_motor, &wrist_roll_profile, WRIST_ROLL_GEAR_RATIO);
 
     // Initialize arm
     init_arm(&arm, base_joint, second_joint, third_joint, fourth_joint, fifth_joint);
@@ -129,7 +134,7 @@ void setup() {
     taskCreated = xTaskCreatePinnedToCore(
         stepMotorTask,       
         "StepMotorTask",     
-        4000,                   
+        20000,                   
         &arm,                   
         3,                      
         &StepMotorTaskHandle,
@@ -142,28 +147,11 @@ void setup() {
         Serial.println("StepMotorTask creation success!");
     }
 
-    // Creating updateJointTask
-    taskCreated = xTaskCreatePinnedToCore(
-        updateJointTask,       
-        "UpdateJointTask",     
-        4000,                   
-        &arm,                   
-        2,                      
-        &UpdateJointTaskHandle,
-        MOTOR_CONTROL_CORE      
-    );
-
-    if (taskCreated != pdPASS) {
-        Serial.println("UpdateJointTask creation failed!");
-    } else {
-        Serial.println("UpdateJointTask creation success!");
-    }
-
     // Creating communicationTask
     taskCreated = xTaskCreatePinnedToCore(
         communicationTask,          
         "CommunicationTask",        
-        3000,                       
+        20000,                       
         &arm,                       
         1,                          
         &CommunicationTaskHandle,   
@@ -183,7 +171,8 @@ void setup() {
         .name = "motor_timer"
     };
     esp_timer_create(&motor_timer_args, &motor_timer);
-    esp_timer_start_periodic(motor_timer, 500); // 2000 Hz
+    esp_timer_start_periodic(motor_timer, 333); // 2000 Hz
+    arm.base_joint.desired_position = 2.0; //rad
 }
 
 void loop() {

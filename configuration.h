@@ -73,6 +73,9 @@
 #define COMMUNICATION_CORE 0  // Using Core 0 for communication handling
 
 #define MIN_STEP_TIME 5  // Minimum step time in microseconds
+#define ZERO_VELOCITY_TIMEOUT 500000  // Zero velocity timeout in microseconds
 // Control configuration
 
+#define MIN_VELOCITY 0.01  // Minimum velocity in radians per second
+#define START_JOINT_VELOCITY 0.01 //minimal joint velocity
 #endif // CONFIGURATION_H
