@@ -172,7 +172,11 @@ void setup() {
     };
     esp_timer_create(&motor_timer_args, &motor_timer);
     esp_timer_start_periodic(motor_timer, 333); // 2000 Hz
-    arm.base_joint.desired_position = 2.0; //rad
+    // arm.base_joint.desired_position = 20.0; //rad
+    // arm.second_joint.desired_position = 5.0; //rad
+    // arm.third_joint.desired_position = 11.0; //rad
+    // arm.fourth_joint.desired_position = 0.57; //rad
+    // arm.fifth_joint.desired_position = 2.0; //rad
 }
 
 void loop() {

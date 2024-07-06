@@ -34,28 +34,34 @@ int receiveData(CommController *comm, Arm_t *arm) {
     return valid_data;
 }
 
+
+
 void processDataToSend(CommController *comm, const Arm_t *arm) {
     comm->TxData[0] = HEADER;
     comm->TxData[1] = HEADER;
 
+    // Positions
     memcpy(&comm->TxData[2], &arm->base_joint.current_position, 4);
-    memcpy(&comm->TxData[6], &arm->base_joint.current_velocity, 4);
-    memcpy(&comm->TxData[10], &arm->base_joint.s_velocity, 4);
-    memcpy(&comm->TxData[14], &arm->base_joint.motor.step_function_frequency, 4);
-    // memcpy(&comm->TxData[6], &arm->second_joint.current_position, 4);
-    
-    // memcpy(&comm->TxData[10], &arm->third_joint.current_position, 4);
-    // memcpy(&comm->TxData[14], &arm->fourth_joint.current_position, 4);
+    memcpy(&comm->TxData[6], &arm->second_joint.current_position, 4);
+    memcpy(&comm->TxData[10], &arm->third_joint.current_position, 4);
+    memcpy(&comm->TxData[14], &arm->fourth_joint.current_position, 4);
     memcpy(&comm->TxData[18], &arm->fifth_joint.current_position, 4);
+
+    // Velocities
+    memcpy(&comm->TxData[22], &arm->base_joint.current_velocity, 4);
+    memcpy(&comm->TxData[26], &arm->second_joint.current_velocity, 4);
+    memcpy(&comm->TxData[30], &arm->third_joint.current_velocity, 4);
+    memcpy(&comm->TxData[34], &arm->fourth_joint.current_velocity, 4);
+    memcpy(&comm->TxData[38], &arm->fifth_joint.current_velocity, 4);
 
     // Compute checksum
     uint8_t checksum = 0;
-    for (int i = 2; i < 22; i++) {  
+    for (int i = 2; i < SIZE_OF_TX_DATA - 2; i++) {  
         checksum += comm->TxData[i];
     }
     
-    comm->TxData[22] = checksum;
-    comm->TxData[23] = TAIL;
+    comm->TxData[42] = checksum;
+    comm->TxData[43] = TAIL;
 
     // Send data
 }

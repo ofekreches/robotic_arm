@@ -63,7 +63,7 @@
 
 // Communication configuration
 #define SIZE_OF_RX_DATA 24  // 2 headers + 5 joints * 4 bytes + checksum + tail
-#define SIZE_OF_TX_DATA 24  // 2 headers + 5 joints * 4 bytes + checksum + tail
+#define SIZE_OF_TX_DATA 44  // 2 headers + 5 joints * 4 bytes + checksum + tail
 #define HEADER 200
 #define TAIL 199
 #define SERIAL_BAUDRATE 115200
